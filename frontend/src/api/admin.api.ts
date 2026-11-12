@@ -1,0 +1,35 @@
+import { api } from './client';
+import type { ApiResponse, PaginatedData } from '../types/api.types';
+import type { SafeUser, Role, Permission, Setting, Template, Page, DashboardStats } from '../types/models.types';
+
+export const adminApi = {
+  dashboard: () => api.get<ApiResponse<DashboardStats>>('/admin/dashboard').then(r => r.data.data!),
+  users: (params: Record<string, unknown>) => api.get<ApiResponse<PaginatedData<SafeUser>>>('/admin/users', { params }).then(r => r.data.data!),
+  user: (id: number) => api.get<ApiResponse<SafeUser & { role: { id: number; name: string } | null }>>(`/admin/users/${id}`).then(r => r.data.data!),
+  createUser: (data: Record<string, unknown>) => api.post('/admin/users', data),
+  updateUser: (id: number, data: Record<string, unknown>) => api.put(`/admin/users/${id}`, data),
+  deleteUser: (id: number) => api.delete(`/admin/users/${id}`),
+  suspendUser: (id: number) => api.put(`/admin/users/${id}/suspend`),
+  roles: () => api.get<ApiResponse<Role[]>>('/admin/roles').then(r => r.data.data ?? []),
+  permissions: () => api.get<ApiResponse<Permission[]>>('/admin/roles/permissions').then(r => r.data.data ?? []),
+  createRole: (data: { name: string; description?: string; permissionKeys?: string[] }) => api.post('/admin/roles', data),
+  updateRole: (id: number, data: { name?: string; description?: string; permissionKeys?: string[] }) => api.put(`/admin/roles/${id}`, data),
+  deleteRole: (id: number) => api.delete(`/admin/roles/${id}`),
+  getSettingsGroup: (group: string) => api.get<ApiResponse<Setting[]>>(`/admin/settings/${group}`).then(r => r.data.data ?? []),
+  updateSettingsGroup: (group: string, items: Array<{ key: string; value: string }>) => api.put<ApiResponse<{ updated: number; skipped: number }>>(`/admin/settings/${group}`, { items }).then(r => r.data.data!),
+  testService: (service: string) => api.post<ApiResponse<{ ok: boolean; message: string; latencyMs?: number }>>(`/admin/services/${service}/test`).then(r => r.data.data!),
+  templates: () => api.get<ApiResponse<Template[]>>('/admin/templates').then(r => r.data.data ?? []),
+  template: (id: number) => api.get<ApiResponse<Template & { versions: Array<{ id: number; version: number; createdAt: string }> }>>(`/admin/templates/${id}`).then(r => r.data.data!),
+  createTemplate: (data: Record<string, unknown>) => api.post('/admin/templates', data),
+  updateTemplate: (id: number, data: Record<string, unknown>) => api.put(`/admin/templates/${id}`, data),
+  deleteTemplate: (id: number) => api.delete(`/admin/templates/${id}`),
+  previewTemplate: (id: number, context: Record<string, unknown>) => api.post<ApiResponse<{ subject: string; body: string }>>(`/admin/templates/${id}/preview`, { context }).then(r => r.data.data!),
+  pages: () => api.get<ApiResponse<Page[]>>('/admin/pages').then(r => r.data.data ?? []),
+  createPage: (data: Record<string, unknown>) => api.post('/admin/pages', data),
+  updatePage: (id: number, data: Record<string, unknown>) => api.put(`/admin/pages/${id}`, data),
+  deletePage: (id: number) => api.delete(`/admin/pages/${id}`),
+  backups: () => api.get<ApiResponse<Array<{ id: number; filename: string; size: number; createdAt: string }>>>('/admin/backups').then(r => r.data.data ?? []),
+  createBackup: () => api.post('/admin/backups'),
+  restoreBackup: (id: number) => api.post(`/admin/backups/${id}/restore`),
+  deleteBackup: (id: number) => api.delete(`/admin/backups/${id}`),
+};

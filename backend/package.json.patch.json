@@ -1,0 +1,7 @@
+{
+  "scripts": {
+    "factory-reset": "tsx scripts/factory-reset.ts",
+    "test:ci": "jest --runInBand --coverage --ci"
+  },
+  "note": "أضف هذه الأسطر إلى scripts في backend/package.json"
+}

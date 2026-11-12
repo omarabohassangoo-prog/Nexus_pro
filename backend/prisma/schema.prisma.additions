@@ -1,0 +1,64 @@
+// ═══════════════════════════════════════════════════════
+// إضافة إلى نهاية backend/prisma/schema.prisma
+// ═══════════════════════════════════════════════════════
+
+model PasswordResetToken {
+  id        Int      @id @default(autoincrement())
+  userId    Int
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  tokenHash String   @unique
+  expiresAt DateTime
+  usedAt    DateTime?
+  createdAt DateTime @default(now())
+  @@index([userId])
+  @@index([expiresAt])
+  @@map("password_reset_tokens")
+}
+
+model EmailVerificationToken {
+  id        Int      @id @default(autoincrement())
+  userId    Int
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  tokenHash String   @unique
+  expiresAt DateTime
+  usedAt    DateTime?
+  createdAt DateTime @default(now())
+  @@index([userId])
+  @@index([expiresAt])
+  @@map("email_verification_tokens")
+}
+
+model LoginHistory {
+  id        Int      @id @default(autoincrement())
+  userId    Int
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  ipAddress String?
+  userAgent String?
+  success   Boolean  @default(true)
+  reason    String?
+  createdAt DateTime @default(now())
+  @@index([userId, createdAt])
+  @@map("login_history")
+}
+
+model TemplatePreview {
+  id         Int      @id @default(autoincrement())
+  templateId Int
+  template   Template @relation(fields: [templateId], references: [id], onDelete: Cascade)
+  userId     Int?
+  context    String   @db.Text
+  rendered   String   @db.Text
+  createdAt  DateTime @default(now())
+  @@index([templateId, createdAt])
+  @@map("template_previews")
+}
+
+// ═══════════════════════════════════════════════════════
+// إضافات إلى model User الموجودة (أضف هذه الحقول):
+//   resetTokens     PasswordResetToken[]
+//   verifyTokens    EmailVerificationToken[]
+//   loginHistory    LoginHistory[]
+//
+// إضافات إلى model Template الموجودة (أضف هذا الحقل):
+//   previews        TemplatePreview[]
+// ═══════════════════════════════════════════════════════
