@@ -1,0 +1,372 @@
+// ═══════════════════════════════════════════════════════
+// نسخة Vercel من schema.prisma — PostgreSQL
+// انسخ هذا إلى schema.prisma قبل النشر على Vercel
+// ═══════════════════════════════════════════════════════
+
+generator client {
+  provider      = "prisma-client-js"
+  binaryTargets = ["native", "rhel-openssl-3.0.x"]
+  previewFeatures = ["driverAdapters"]
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+// ── Enums ──
+enum UserType { SUPER_ADMIN ADMIN EDITOR USER }
+enum UserStatus { PENDING ACTIVE SUSPENDED DELETED }
+enum TemplateType {
+  EMAIL SMS WHATSAPP INVOICE NOTIFICATION
+  PUSH PDF REPORT CERTIFICATE WELCOME
+}
+
+// ── Models (نفس الحقول، PostgreSQL syntax) ──
+
+model User {
+  id               Int        @id @default(autoincrement())
+  email            String     @unique
+  passwordHash     String
+  name             String
+  phone            String?
+  avatarUrl        String?
+  type             UserType   @default(USER)
+  status           UserStatus @default(PENDING)
+  emailVerified    Boolean    @default(false)
+  twoFactorEnabled Boolean    @default(false)
+  twoFactorSecret  String?
+  failedAttempts   Int        @default(0)
+  lockedUntil      DateTime?
+  language         String     @default("ar")
+  roleId           Int?
+  role             Role?      @relation(fields: [roleId], references: [id], onDelete: SetNull)
+  lastLoginAt      DateTime?
+  createdAt        DateTime   @default(now())
+  updatedAt        DateTime   @updatedAt
+  deletedAt        DateTime?
+  sessions         Session[]
+  notifications    Notification[]
+  auditLogs        AuditLog[]
+  mediaFiles       MediaFile[]
+  payments         Payment[]
+  chatMessages     ChatMessage[]
+  participations   ChatParticipant[]
+  resetTokens      PasswordResetToken[]
+  verifyTokens     EmailVerificationToken[]
+  loginHistory     LoginHistory[]
+  @@index([email])
+  @@index([type])
+  @@index([status])
+  @@index([createdAt])
+  @@map("users")
+}
+
+model Role {
+  id          Int              @id @default(autoincrement())
+  name        String           @unique
+  description String?
+  isSystem    Boolean          @default(false)
+  createdAt   DateTime         @default(now())
+  updatedAt   DateTime         @updatedAt
+  users       User[]
+  permissions RolePermission[]
+  @@map("roles")
+}
+
+model Permission {
+  id          Int              @id @default(autoincrement())
+  key         String           @unique
+  group       String
+  description String?
+  createdAt   DateTime         @default(now())
+  roles       RolePermission[]
+  @@index([group])
+  @@map("permissions")
+}
+
+model RolePermission {
+  roleId       Int
+  permissionId Int
+  role         Role       @relation(fields: [roleId], references: [id], onDelete: Cascade)
+  permission   Permission @relation(fields: [permissionId], references: [id], onDelete: Cascade)
+  @@id([roleId, permissionId])
+  @@map("role_permissions")
+}
+
+model Session {
+  id          String    @id @default(cuid())
+  userId      Int
+  user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  refreshHash String
+  ipAddress   String?
+  userAgent   String?
+  expiresAt   DateTime
+  revokedAt   DateTime?
+  createdAt   DateTime  @default(now())
+  @@index([userId])
+  @@index([expiresAt])
+  @@map("sessions")
+}
+
+model SystemSetting {
+  id          Int      @id @default(autoincrement())
+  key         String   @unique
+  value       String   @db.Text
+  group       String
+  isSecret    Boolean  @default(false)
+  isEncrypted Boolean  @default(false)
+  updatedAt   DateTime @updatedAt
+  createdAt   DateTime @default(now())
+  @@index([group])
+  @@map("system_settings")
+}
+
+model Page {
+  id              Int      @id @default(autoincrement())
+  slug            String   @unique
+  title           String
+  content         String   @db.Text
+  metaTitle       String?
+  metaDescription String?
+  ogImage         String?
+  showInNav       Boolean  @default(true)
+  showInFooter    Boolean  @default(true)
+  navOrder        Int      @default(0)
+  requiresAuth    Boolean  @default(false)
+  isSystem        Boolean  @default(false)
+  status          String   @default("active")
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+  @@map("pages")
+}
+
+model Notification {
+  id        Int       @id @default(autoincrement())
+  userId    Int
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  type      String
+  title     String
+  body      String    @db.Text
+  data      String?
+  isRead    Boolean   @default(false)
+  readAt    DateTime?
+  createdAt DateTime  @default(now())
+  @@index([userId, isRead])
+  @@index([createdAt])
+  @@map("notifications")
+}
+
+model Template {
+  id        Int               @id @default(autoincrement())
+  key       String            @unique
+  name      String
+  type      TemplateType
+  subject   String?
+  body      String            @db.Text
+  variables String?
+  language  String            @default("ar")
+  isSystem  Boolean           @default(false)
+  isActive  Boolean           @default(true)
+  createdAt DateTime          @default(now())
+  updatedAt DateTime          @updatedAt
+  versions  TemplateVersion[]
+  usages    TemplateUsage[]
+  previews  TemplatePreview[]
+  @@index([type])
+  @@index([key])
+  @@map("templates")
+}
+
+model TemplateVersion {
+  id         Int      @id @default(autoincrement())
+  templateId Int
+  template   Template @relation(fields: [templateId], references: [id], onDelete: Cascade)
+  version    Int
+  body       String   @db.Text
+  subject    String?
+  createdBy  Int?
+  createdAt  DateTime @default(now())
+  @@unique([templateId, version])
+  @@map("template_versions")
+}
+
+model TemplateUsage {
+  id         Int      @id @default(autoincrement())
+  templateId Int
+  template   Template @relation(fields: [templateId], references: [id], onDelete: Cascade)
+  userId     Int?
+  channel    String
+  status     String
+  error      String?
+  createdAt  DateTime @default(now())
+  @@index([templateId, createdAt])
+  @@map("template_usages")
+}
+
+model TemplatePreview {
+  id         Int      @id @default(autoincrement())
+  templateId Int
+  template   Template @relation(fields: [templateId], references: [id], onDelete: Cascade)
+  userId     Int?
+  context    String   @db.Text
+  rendered   String   @db.Text
+  createdAt  DateTime @default(now())
+  @@index([templateId, createdAt])
+  @@map("template_previews")
+}
+
+model AuditLog {
+  id        Int      @id @default(autoincrement())
+  userId    Int?
+  user      User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
+  action    String
+  entity    String
+  entityId  Int?
+  changes   String?
+  ipAddress String?
+  userAgent String?
+  requestId String?
+  createdAt DateTime @default(now())
+  @@index([userId])
+  @@index([entity, entityId])
+  @@index([createdAt])
+  @@index([action])
+  @@map("audit_logs")
+}
+
+model MediaFile {
+  id           Int      @id @default(autoincrement())
+  userId       Int?
+  user         User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
+  filename     String
+  originalName String
+  mimeType     String
+  size         Int
+  storage      String   @default("vercel-blob")
+  path         String
+  url          String
+  createdAt    DateTime @default(now())
+  @@index([userId])
+  @@map("media_files")
+}
+
+model Payment {
+  id              Int      @id @default(autoincrement())
+  userId          Int
+  user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  provider        String   @default("paypal")
+  providerOrderId String   @unique
+  amount          Float
+  currency        String   @default("USD")
+  status          String   @default("pending")
+  metadata        String?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+  @@index([userId])
+  @@map("payments")
+}
+
+model Language {
+  id           Int           @id @default(autoincrement())
+  code         String        @unique
+  name         String
+  direction    String        @default("ltr")
+  isDefault    Boolean       @default(false)
+  isActive     Boolean       @default(true)
+  translations Translation[]
+  @@map("languages")
+}
+
+model Translation {
+  id         Int      @id @default(autoincrement())
+  languageId Int
+  language   Language @relation(fields: [languageId], references: [id], onDelete: Cascade)
+  namespace  String   @default("common")
+  key        String
+  value      String   @db.Text
+  @@unique([languageId, namespace, key])
+  @@map("translations")
+}
+
+model Chat {
+  id           Int               @id @default(autoincrement())
+  type         String            @default("private")
+  createdAt    DateTime          @default(now())
+  messages     ChatMessage[]
+  participants ChatParticipant[]
+  @@map("chats")
+}
+
+model ChatMessage {
+  id        Int       @id @default(autoincrement())
+  chatId    Int
+  chat      Chat      @relation(fields: [chatId], references: [id], onDelete: Cascade)
+  userId    Int
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  body      String    @db.Text
+  readAt    DateTime?
+  createdAt DateTime  @default(now())
+  @@index([chatId, createdAt])
+  @@map("chat_messages")
+}
+
+model ChatParticipant {
+  chatId   Int
+  userId   Int
+  chat     Chat     @relation(fields: [chatId], references: [id], onDelete: Cascade)
+  user     User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  joinedAt DateTime @default(now())
+  @@id([chatId, userId])
+  @@map("chat_participants")
+}
+
+model Backup {
+  id        Int      @id @default(autoincrement())
+  filename  String
+  size      Int
+  status    String   @default("completed")
+  createdBy Int?
+  createdAt DateTime @default(now())
+  @@map("backups")
+}
+
+model PasswordResetToken {
+  id        Int      @id @default(autoincrement())
+  userId    Int
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  tokenHash String   @unique
+  expiresAt DateTime
+  usedAt    DateTime?
+  createdAt DateTime @default(now())
+  @@index([userId])
+  @@index([expiresAt])
+  @@map("password_reset_tokens")
+}
+
+model EmailVerificationToken {
+  id        Int      @id @default(autoincrement())
+  userId    Int
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  tokenHash String   @unique
+  expiresAt DateTime
+  usedAt    DateTime?
+  createdAt DateTime @default(now())
+  @@index([userId])
+  @@index([expiresAt])
+  @@map("email_verification_tokens")
+}
+
+model LoginHistory {
+  id        Int      @id @default(autoincrement())
+  userId    Int
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  ipAddress String?
+  userAgent String?
+  success   Boolean  @default(true)
+  reason    String?
+  createdAt DateTime @default(now())
+  @@index([userId, createdAt])
+  @@map("login_history")
+}
