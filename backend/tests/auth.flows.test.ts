@@ -56,7 +56,7 @@ describe('Auth flows (full)', () => {
   it('rejects reused reset token', async () => {
     const record = await prisma.passwordResetToken.findFirst({ where: { userId, usedAt: { not: null } } });
     expect(record).toBeTruthy();
-    const res = await request(app).post('/api/auth/reset-password').send({ token: 'invalid', password: 'X' });
+    const res = await request(app).post('/api/auth/reset-password').send({ token: 'invalid_token_value', password: 'SecurePass123!' });
     expect(res.status).toBe(400);
   });
 });

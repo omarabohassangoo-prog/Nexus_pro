@@ -1,4 +1,4 @@
-import { UserType, UserStatus } from '@prisma/client';
+import { UserType, UserStatus } from '../constants/enums';
 export interface SafeUser {
   id: number; email: string; name: string; phone: string | null;
   avatarUrl: string | null; type: UserType; status: UserStatus;

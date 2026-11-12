@@ -16,7 +16,11 @@ export const backupService = {
     const fullPath = path.join(BACKUP_DIR, filename);
     const tables = ['user', 'role', 'permission', 'rolePermission', 'page', 'template', 'systemSetting', 'language', 'translation', 'notification'] as const;
     const payload: Record<string, unknown> = { createdAt: new Date().toISOString() };
-    for (const t of tables) { payload[t] = await (prisma as unknown as Record<string, { findMany: () => Promise<unknown[]> }>)[t].findMany(); }
+    for (const t of tables) {
+      const delegate = (prisma as unknown as Record<string, { findMany: () => Promise<unknown[]> }>)[t];
+      if (!delegate) throw new Error(`Unknown Prisma delegate: ${t}`);
+      payload[t] = await delegate.findMany();
+    }
     await fs.writeFile(fullPath, JSON.stringify(payload, null, 2));
     const stat = await fs.stat(fullPath);
     const record = await prisma.backup.create({ data: { filename, size: stat.size, status: 'completed', createdBy } });

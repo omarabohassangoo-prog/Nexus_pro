@@ -21,7 +21,7 @@ async function authenticateSocket(socket: Socket): Promise<SocketData | null> {
   const token = (socket.handshake.auth?.token as string | undefined) ?? (socket.handshake.query?.token as string | undefined);
   if (!token) return null;
   try {
-    const payload = jwt.verify(token, env.JWT_SECRET) as { sub: number; email: string };
+    const payload = jwt.verify(token, env.JWT_SECRET) as unknown as { sub: number; email: string };
     const user = await prisma.user.findUnique({
       where: { id: payload.sub },
       select: { id: true, email: true, type: true, status: true, roleId: true, deletedAt: true },

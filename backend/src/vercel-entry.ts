@@ -1,9 +1,8 @@
 // ═══════════════════════════════════════════════════════
 // Vercel Serverless Entry Point
 // ═══════════════════════════════════════════════════════
-import { createApp } from './app';
+import { createVercelApp } from './app.vercel';
 
-// لا نستدعي initRealtime على Vercel (WebSocket غير مدعوم)
-const app = createApp();
+const app = createVercelApp();
 
 export default app;

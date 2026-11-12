@@ -5,7 +5,7 @@
     "moduleResolution": "node",
     "lib": ["ES2022"],
     "outDir": "./dist",
-    "rootDir": "./src",
+    "rootDir": ".",
     "strict": true,
     "noImplicitAny": true,
     "strictNullChecks": true,
@@ -22,5 +22,5 @@
     "paths": { "@/*": ["src/*"] }
   },
   "include": ["src/**/*"],
-  "exclude": ["node_modules", "dist", "tests"]
+  "exclude": ["node_modules", "dist", "tests", "src/**/*.vercel.ts", "src/**/*.patch.ts", "src/**/*.fixes.ts", "src/vercel-entry.ts"]
 }

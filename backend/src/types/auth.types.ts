@@ -1,4 +1,4 @@
-import { UserType } from '@prisma/client';
+import { UserType } from '../constants/enums';
 import { SafeUser } from './user.types';
 
 export interface TokenPair {

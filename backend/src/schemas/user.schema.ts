@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { UserType, UserStatus } from '@prisma/client';
+import { UserType, UserStatus } from '../constants/enums';
 
 export const updateProfileSchema = z.object({
   name: z.string().trim().min(2).max(100).optional(),

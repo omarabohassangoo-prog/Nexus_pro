@@ -13,7 +13,7 @@ process.env.INSTALL_LOCKED = 'false';
 
 beforeAll(async () => {
   try { if (fs.existsSync(testDb)) fs.unlinkSync(testDb); } catch { /* ignore */ }
-  execSync('npx prisma migrate deploy', { stdio: 'inherit', env: { ...process.env } });
+  execSync('npx prisma db push --schema prisma/schema.prisma --skip-generate', { stdio: 'inherit', env: { ...process.env } });
   execSync('npx tsx prisma/seed.ts', { stdio: 'inherit', env: { ...process.env } });
 }, 60000);
 

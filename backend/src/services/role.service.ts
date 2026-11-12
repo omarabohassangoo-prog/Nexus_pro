@@ -34,7 +34,7 @@ export const roleService = {
       if (data.permissionKeys) {
         const perms = await tx.permission.findMany({ where: { key: { in: data.permissionKeys } } });
         await tx.rolePermission.deleteMany({ where: { roleId: id } });
-        await tx.rolePermission.createMany({ data: perms.map(p => ({ roleId: id, permissionId: p.id })), skipDuplicates: true });
+        await tx.rolePermission.createMany({ data: perms.map(p => ({ roleId: id, permissionId: p.id })) });
       }
     });
     return prisma.role.findUnique({ where: { id }, include: { permissions: { include: { permission: true } } } });
