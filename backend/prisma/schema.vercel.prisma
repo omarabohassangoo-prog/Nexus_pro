@@ -16,11 +16,31 @@ datasource db {
 }
 
 // ── Enums ──
-enum UserType { SUPER_ADMIN ADMIN EDITOR USER }
-enum UserStatus { PENDING ACTIVE SUSPENDED DELETED }
+enum UserType {
+  SUPER_ADMIN
+  ADMIN
+  EDITOR
+  USER
+}
+
+enum UserStatus {
+  PENDING
+  ACTIVE
+  SUSPENDED
+  DELETED
+}
+
 enum TemplateType {
-  EMAIL SMS WHATSAPP INVOICE NOTIFICATION
-  PUSH PDF REPORT CERTIFICATE WELCOME
+  EMAIL
+  SMS
+  WHATSAPP
+  INVOICE
+  NOTIFICATION
+  PUSH
+  PDF
+  REPORT
+  CERTIFICATE
+  WELCOME
 }
 
 // ── Models (نفس الحقول، PostgreSQL syntax) ──

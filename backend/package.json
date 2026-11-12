@@ -5,8 +5,10 @@
   "scripts": {
     "dev": "tsx watch src/server.ts",
     "build": "tsc -p tsconfig.json",
-    "start": "node dist/server.js",
+    "start": "node dist/src/server.js",
+    "postinstall": "node scripts/generate-prisma-client.js",
     "prisma:generate": "prisma generate",
+    "prisma:generate:vercel": "prisma generate --schema=prisma/schema.vercel.prisma",
     "prisma:migrate": "prisma migrate dev",
     "prisma:deploy": "prisma migrate deploy",
     "prisma:seed": "tsx prisma/seed.ts",
@@ -16,9 +18,12 @@
     "test:watch": "jest --watch",
     "test:coverage": "jest --coverage"
   },
-  "prisma": { "seed": "tsx prisma/seed.ts" },
+  "prisma": {
+    "seed": "tsx prisma/seed.ts"
+  },
   "dependencies": {
     "@prisma/client": "^5.22.0",
+    "@vercel/blob": "^2.9.0",
     "bcrypt": "^5.1.1",
     "compression": "^1.7.5",
     "cookie-parser": "^1.4.7",
@@ -28,6 +33,7 @@
     "express-rate-limit": "^7.5.0",
     "helmet": "^8.0.0",
     "jsonwebtoken": "^9.0.2",
+    "multer": "^2.5.0",
     "mustache": "^4.2.0",
     "nodemailer": "^6.10.0",
     "pino": "^9.5.0",
@@ -40,9 +46,10 @@
     "@types/compression": "^1.7.5",
     "@types/cookie-parser": "^1.4.8",
     "@types/cors": "^2.8.17",
-    "@types/express": "^5.0.0",
+    "@types/express": "^4.17.25",
     "@types/jest": "^29.5.14",
     "@types/jsonwebtoken": "^9.0.7",
+    "@types/multer": "^2.3.0",
     "@types/mustache": "^4.2.5",
     "@types/node": "^22.10.2",
     "@types/nodemailer": "^6.4.17",

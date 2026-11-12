@@ -1,4 +1,6 @@
-interface Props { children: string; color?: 'default' | 'success' | 'danger' | 'warning' | 'info'; }
+import type { ReactNode } from 'react';
+
+interface Props { children: ReactNode; color?: 'default' | 'success' | 'danger' | 'warning' | 'info'; }
 const colors = {
   default: { bg: '#e2e8f0', fg: '#0f172a' },
   success: { bg: '#d1fae5', fg: '#065f46' },

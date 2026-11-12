@@ -1,10 +1,9 @@
-import { UserStatus, UserType } from '@prisma/client';
+import { UserStatus, UserType } from '../constants/enums';
 import { prisma } from '../config/prisma';
 import { AppError } from '../utils/AppError';
 import { hashPassword, verifyPassword } from '../utils/password';
 import { signAccess, signRefresh, verifyRefresh, TTL } from '../utils/jwt';
 import { randomToken, sha256 } from '../utils/crypto';
-import { logger } from '../utils/logger';
 import type { RegisterInput, LoginInput } from '../schemas/auth.schema';
 import type { SafeUser } from '../types/user.types';
 import type { LoginResult } from '../types/auth.types';
@@ -19,9 +18,9 @@ function toSafeUser(u: { id: number; email: string; name: string; phone: string 
 async function resolveRedirectByType(type: UserType): Promise<string> {
   const setting = await prisma.systemSetting.findUnique({ where: { key: 'admin.redirectAfterLoginByType' } });
   const fallback: Record<UserType, string> = { SUPER_ADMIN: '/admin', ADMIN: '/admin', EDITOR: '/admin', USER: '/user' };
-  if (!setting) return fallback[type];
-  try { const map = JSON.parse(setting.value) as Record<string, string>; return map[type] ?? fallback[type]; }
-  catch { return fallback[type]; }
+  if (!setting) return fallback[type] ?? '/user';
+  try { const map = JSON.parse(setting.value) as Record<string, string>; return map[type] ?? fallback[type] ?? '/user'; }
+  catch { return fallback[type] ?? '/user'; }
 }
 
 export const authService = {
@@ -34,7 +33,9 @@ export const authService = {
       data: { email: input.email, passwordHash, name: input.name, phone: input.phone, type: input.type === 'EDITOR' ? UserType.EDITOR : UserType.USER, status: UserStatus.PENDING, roleId: defaultRole?.id ?? null },
     });
     const activationToken = randomToken(32);
-    logger.info({ userId: user.id, activationToken: activationToken.slice(0, 8) + '...' }, 'activation token generated');
+    await prisma.emailVerificationToken.create({
+      data: { userId: user.id, tokenHash: sha256(activationToken), expiresAt: new Date(Date.now() + 24 * 60 * 60 * 1000) },
+    });
     return { user: toSafeUser(user) };
   },
 
@@ -125,16 +126,43 @@ export const authService = {
   async forgotPassword(email: string) {
     const user = await prisma.user.findUnique({ where: { email } });
     if (!user) return;
+    const now = new Date();
+    await prisma.passwordResetToken.updateMany({ where: { userId: user.id, usedAt: null }, data: { usedAt: now } });
     const token = randomToken(32);
-    logger.info({ userId: user.id, token: token.slice(0, 8) }, 'reset token');
+    await prisma.passwordResetToken.create({
+      data: { userId: user.id, tokenHash: sha256(token), expiresAt: new Date(now.getTime() + 60 * 60 * 1000) },
+    });
   },
 
-  async resetPassword(token: string, _newPassword: string) {
+  async resetPassword(token: string, newPassword: string) {
     if (!token || token.length < 10) throw AppError.badRequest('رمز غير صالح', 'INVALID_TOKEN');
-    throw AppError.internal('سيُستكمل لاحقاً', 'NOT_IMPLEMENTED');
+    const record = await prisma.passwordResetToken.findUnique({ where: { tokenHash: sha256(token) } });
+    const now = new Date();
+    if (!record || record.usedAt || record.expiresAt <= now) throw AppError.badRequest('رمز غير صالح أو منتهي', 'INVALID_TOKEN');
+    const passwordHash = await hashPassword(newPassword);
+    await prisma.$transaction(async (tx) => {
+      const consumed = await tx.passwordResetToken.updateMany({
+        where: { id: record.id, usedAt: null, expiresAt: { gt: now } },
+        data: { usedAt: now },
+      });
+      if (consumed.count !== 1) throw AppError.badRequest('رمز غير صالح أو منتهي', 'INVALID_TOKEN');
+      await tx.user.update({ where: { id: record.userId }, data: { passwordHash } });
+      await tx.session.updateMany({ where: { userId: record.userId, revokedAt: null }, data: { revokedAt: now } });
+    });
   },
 
-  async activate(_token: string) {
-    throw AppError.internal('سيُستكمل لاحقاً', 'NOT_IMPLEMENTED');
+  async activate(token: string) {
+    if (!token || token.length < 10) throw AppError.badRequest('رمز غير صالح', 'INVALID_TOKEN');
+    const record = await prisma.emailVerificationToken.findUnique({ where: { tokenHash: sha256(token) } });
+    const now = new Date();
+    if (!record || record.usedAt || record.expiresAt <= now) throw AppError.badRequest('رمز غير صالح أو منتهي', 'INVALID_TOKEN');
+    await prisma.$transaction(async (tx) => {
+      const consumed = await tx.emailVerificationToken.updateMany({
+        where: { id: record.id, usedAt: null, expiresAt: { gt: now } },
+        data: { usedAt: now },
+      });
+      if (consumed.count !== 1) throw AppError.badRequest('رمز غير صالح أو منتهي', 'INVALID_TOKEN');
+      await tx.user.update({ where: { id: record.userId }, data: { status: UserStatus.ACTIVE, emailVerified: true } });
+    });
   },
 };

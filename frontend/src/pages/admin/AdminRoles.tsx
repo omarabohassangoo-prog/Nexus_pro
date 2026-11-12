@@ -30,7 +30,7 @@ export function AdminRoles() {
           <p className="text-sm text-muted mb-2">{role.description}</p>
           <div className="flex gap-1 flex-wrap">
             {role.permissions?.slice(0, 10).map(p => <Badge key={p.permission.id}>{p.permission.key}</Badge>)}
-            {(role.permissions?.length ?? 0) > 10 && <Badge>+{(role.permissions?.length ?? 0) - 10}</Badge>}
+            {(role.permissions?.length ?? 0) > 10 && <Badge>{`+${(role.permissions?.length ?? 0) - 10}`}</Badge>}
           </div>
         </div>
       ))}

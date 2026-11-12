@@ -14,11 +14,11 @@ export function signRefresh(payload: JwtPayload & { sid: string }): string {
 }
 
 export function verifyAccess(token: string): JwtPayload {
-  return jwt.verify(token, env.JWT_SECRET) as JwtPayload;
+  return jwt.verify(token, env.JWT_SECRET) as unknown as JwtPayload;
 }
 
 export function verifyRefresh(token: string): JwtPayload & { sid: string } {
-  return jwt.verify(token, env.REFRESH_TOKEN_SECRET) as JwtPayload & { sid: string };
+  return jwt.verify(token, env.REFRESH_TOKEN_SECRET) as unknown as JwtPayload & { sid: string };
 }
 
 export const TTL = { ACCESS: 15 * 60, REFRESH: 7 * 24 * 60 * 60 };

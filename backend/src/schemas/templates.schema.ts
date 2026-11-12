@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { TemplateType } from '@prisma/client';
+import { TemplateType } from '../constants/enums';
 
 export const createTemplateSchema = z.object({
   key: z.string().trim().min(2).max(100).regex(/^[a-z0-9_]+$/),

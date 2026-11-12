@@ -23,7 +23,8 @@ export const adminTemplatesController = {
   },
   async preview(req: Request, res: Response) {
     const { context, language } = req.body as { context: Record<string, unknown>; language?: string };
-    const data = await templateService.preview(Number(req.params.id), context, language);
+    const template = await templateService.getById(Number(req.params.id));
+    const data = await templateService.preview(template.key, context, language);
     res.json({ success: true, data } as ApiResponse);
   },
   async restoreVersion(req: Request, res: Response) {

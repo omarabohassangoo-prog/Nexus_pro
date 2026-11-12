@@ -4,7 +4,7 @@ import { authorize } from '../middlewares/authorize';
 import { requirePermission } from '../middlewares/requirePermission';
 import { writeLimiter } from '../middlewares/rateLimiter';
 import { asyncHandler } from '../utils/asyncHandler';
-import { UserType } from '@prisma/client';
+import { UserType } from '../constants/enums';
 
 import { adminUsersController } from '../controllers/admin/users.controller';
 import { adminRolesController } from '../controllers/admin/roles.controller';

@@ -1,4 +1,5 @@
-import { PrismaClient, UserType, TemplateType, UserStatus } from '@prisma/client';
+import { PrismaClient } from '@prisma/client';
+import { UserType, TemplateType, UserStatus } from '../src/constants/enums';
 import bcrypt from 'bcrypt';
 
 const prisma = new PrismaClient();
@@ -132,7 +133,7 @@ async function main() {
     else permKeys = r.permissions;
     const perms = await prisma.permission.findMany({ where: { key: { in: permKeys } } });
     await prisma.rolePermission.deleteMany({ where: { roleId: role.id } });
-    await prisma.rolePermission.createMany({ data: perms.map(p => ({ roleId: role.id, permissionId: p.id })), skipDuplicates: true });
+    await prisma.rolePermission.createMany({ data: perms.map(p => ({ roleId: role.id, permissionId: p.id })) });
   }
   console.log(`✅ ${ROLES.length} roles`);
   const superRole = await prisma.role.findUnique({ where: { name: 'super_admin' } });

@@ -1,5 +1,5 @@
 import { Request, Response, NextFunction } from 'express';
-import { UserType } from '@prisma/client';
+import { UserType } from '../constants/enums';
 import { AppError } from '../utils/AppError';
 
 export function authorize(...allowed: UserType[]) {

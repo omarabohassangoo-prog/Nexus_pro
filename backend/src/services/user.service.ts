@@ -1,4 +1,5 @@
-import { Prisma, UserStatus, UserType } from '@prisma/client';
+import { Prisma } from '@prisma/client';
+import { UserStatus, UserType } from '../constants/enums';
 import { prisma } from '../config/prisma';
 import { AppError } from '../utils/AppError';
 import { hashPassword } from '../utils/password';
@@ -16,11 +17,15 @@ export const userService = {
     if (q.type) where.type = q.type;
     if (q.status) where.status = q.status;
     if (q.search) where.OR = [{ email: { contains: q.search } }, { name: { contains: q.search } }];
+    const page = q.page ?? 1;
+    const pageSize = q.pageSize ?? 20;
+    const sortBy = q.sortBy ?? 'createdAt';
+    const sortOrder = q.sortOrder ?? 'desc';
     const [total, rows] = await Promise.all([
       prisma.user.count({ where }),
-      prisma.user.findMany({ where, skip: (q.page - 1) * q.pageSize, take: q.pageSize, orderBy: { [q.sortBy]: q.sortOrder } }),
+      prisma.user.findMany({ where, skip: (page - 1) * pageSize, take: pageSize, orderBy: { [sortBy]: sortOrder } }),
     ]);
-    return { items: rows.map(toSafe), meta: buildPaginationMeta(total, q.page, q.pageSize) };
+    return { items: rows.map(toSafe), meta: buildPaginationMeta(total, page, pageSize) };
   },
 
   async getById(id: number) {
